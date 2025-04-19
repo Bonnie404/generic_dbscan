@@ -115,7 +115,7 @@ __global__ void BFSKernel(const Node* __restrict__ nodes, const int* __restrict_
     }
 }
 
-__device__ unsigned int d_countFa;
+__device__ unsigned int d_countFa; // Global device variable
 
 __global__ void BFSKernel(Node* dNodes, const int* adjList, const int* neighborStartIndices,
                           char* dFa, char* dXa, int numPoints)
@@ -156,17 +156,21 @@ void BFS(Node* hNodes, Node* dNodes, const int* adjList, const int* neighborStar
         cudaMemcpy(&h_countFa, &d_countFa, sizeof(unsigned int), cudaMemcpyDeviceToHost);
 
         // Update the current frontier (dFa) with the newly discovered nodes (dXa)
-        thrust::logical_or(dFa.begin(), dFa.end(), dXa.begin(), dFa.begin());
+        thrust::transform(dFa.begin(), dFa.end(), dXa.begin(), dFa.begin(), thrust::logical_or<char>());
         thrust::fill(dXa.begin(), dXa.end(), false);
 
-        // Continue as long as new nodes were added to the frontier in the last iteration
-        continue_bfs = (h_countFa > 0);
-
-        // Optimization: If no new nodes were added AND the current frontier (dFa) is empty
-        // (after the initial seed has been processed), then we can stop.
-        if (h_countFa == 0 && !thrust::any_of(dFa.begin(), dFa.end())) {
-            continue_bfs = false;
+        // Check if the current frontier (dFa) is empty
+        thrust::host_vector<char> h_dFa = dFa;
+        bool any_in_frontier = false;
+        for (char val : h_dFa) {
+            if (val) {
+                any_in_frontier = true;
+                break;
+            }
         }
+
+        // Continue as long as new nodes were added or the frontier is not empty
+        continue_bfs = (h_countFa > 0 || any_in_frontier);
     }
 
     thrust::host_vector<char> hXa = dFa; // The final visited set is in dFa
