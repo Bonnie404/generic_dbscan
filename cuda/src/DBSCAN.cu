@@ -10,7 +10,6 @@
 
 #include <pcl/point_types.h>
 
-#include <thrust/execution_policy.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 

@@ -9,8 +9,8 @@
 
 #include <cstdio>
 #include <cstdlib>
-
 #include <cuda_runtime.h>
+#include <thrust/execution_policy.h>
 
 namespace cuda
 {
